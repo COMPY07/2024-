@@ -6,7 +6,7 @@ from math import ceil
 
 prompt = ""
 max_tokens = 1000
-limit = 50000
+limit = 30000
 max_csv = 232074
 
 with open("data.csv", newline='') as c:
