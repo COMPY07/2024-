@@ -1,6 +1,6 @@
 # Custom
 data.csv
-input*.jsonl
+inputs
 openai_key
 
 # Python.gitignore by ignofierplus
