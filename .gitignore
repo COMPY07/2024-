@@ -2,7 +2,6 @@
 data.csv
 inputs
 openai_key
-.direnv
 
 # Python.gitignore by ignofierplus
 __pycache__/
