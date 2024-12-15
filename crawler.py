@@ -1,20 +1,20 @@
 from httpx import get
 
 from csv import DictWriter
-from datetime import datetime, UTC, timedelta
+from datetime import datetime, timedelta
 from logging import basicConfig, ERROR, error
 from traceback import format_exc
 from copy import deepcopy
 
 basicConfig(level=ERROR)
 
-base_hashtag = "lang:ko"
+base_hashtag = "lang:ko -더바몰"
 query = base_hashtag + " 자살"
 print(query)
 base_url = "https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts"
 
-# 2023/11~2024/11
-now = datetime.now(UTC)
+# 2023/10~2024/10
+now = datetime(2024, 10, 1, 0, 0)
 since = deepcopy(now)
 since -= timedelta(days=1)
 since = since.replace(hour=0, minute=0, second=0, microsecond=0)
