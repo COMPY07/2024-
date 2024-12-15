@@ -1,61 +1,98 @@
-from pydantic import BaseModel
-from httpx import post, get
-from openai import OpenAI
+from httpx import get
 
-from time import sleep
-from os import environ
-from pathlib import Path
+from csv import DictWriter
+from datetime import datetime, UTC, timedelta
+from logging import basicConfig, ERROR, error
+from traceback import format_exc
+from copy import deepcopy
 
-# https://scienceon.kisti.re.kr/srch/selectPORSrchArticle.do?cn=DIKO0015955197
-hashtag = "자살 자살시도 자살충동 자살사고 죽고싶다 죽고싶어"
-hashtags = [f"#{i}" for i in hashtag.split(" ")]
-query = {
-  "includeSearchTerms": False,
-  "onlyImage": False,
-  "onlyQuote": False,
-  "onlyTwitterBlue": False,
-  "onlyVerifiedUsers": False,
-  "onlyVideo": False,
-  "searchTerms": hashtags,
-  "sort": "Latest",
-  "tweetLanguage": "ko"
-}
+basicConfig(level=ERROR)
 
-data_number = 10000 # data sum
-if data_number % 2 == 1:
-  raise ValueError("data_number must be even")
-data_seq = data_number // 2
-apify_id = "apidojo~tweet-scraper"
-params = {"token": environ["APIFY_API_URL"]}
+base_hashtag = "lang:ko"
+query = base_hashtag + " 자살"
+print(query)
+base_url = "https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts"
 
-class GetRunResult(BaseModel):
-  status: str
+# 2023/11~2024/11
+now = datetime.now(UTC)
+since = deepcopy(now)
+since -= timedelta(days=1)
+since = since.replace(hour=0, minute=0, second=0, microsecond=0)
+print(since)
 
-class RunActorResult(BaseModel):
-  defaultDatasetId: str
-  id: str
+with open("suicidal.csv", "w") as f:
+  d = DictWriter(f, fieldnames=["id", "content"])
+  d.writeheader()
+  i = 0
+  while i <= 12 * 31:
+    try:
+      params = {
+        "q": query,
+        "lang": "ko",
+        "limit": 100,
+        "sort": "top",
+        "since": since.isoformat()[:19] + 'Z',
+        "until": since.replace(
+          day=since.day,
+          hour=23,
+          minute=59,
+          second=59,
+          microsecond=0
+        ).isoformat()[:19] + 'Z'
+      }
+      print(params)
+      data = get(base_url, params=params)
+      print(data.status_code)
+      if data.is_error:
+        print(data.text)
+        raise ValueError("it's error")
+      print(data.json())
+      print(data.headers)
+      data = data.json()['posts']
+      d.writerows([{'id': i['cid'], 'content': i['record']['text']} for i in data])
+      since -= timedelta(days=1)
+      i += 1
+    except Exception as e:
+      error(f"Error occurred: {e}\n{format_exc()}")
+      input()
 
-ids = {}
+since = deepcopy(now)
+since -= timedelta(days=1)
+since = since.replace(hour=0, minute=0, second=0, microsecond=0)
+print(since)
 
-for _ in range(2):
-  p = RunActorResult.model_validate_json(post(f"https://api.apify.com/v2/acts/{apify_id}/runs", params=params).json())
-  ids[p.id] = p
-
-data = []
-
-while len(ids) > 0:
-  res = []
-  for i in ids:
-    r = GetRunResult.model_validate_json(get(f"https://api.apify.com/v2/actor-runs/{i}").json())
-    if r.status != "RUNNING":
-      print(r.status)
-      res.append(i)
-
-  for i in res:
-    print(i)
-    data.extend(get(f"https://api.apify.com/v2/datasets/{ids[i].defaultDatasetId}/items").json())
-    del ids[i]
-
-  sleep(1)
-
-Path("res.csv").write_text(data)
+with open("normal.csv", "w") as f:
+  d = DictWriter(f, fieldnames=["id", "content"])
+  d.writeheader()
+  i = 0
+  while i <= 12 * 31:
+    try:
+      params = {
+        "query": base_hashtag,
+        "lang": "ko",
+        "limit": 100,
+        "sort": "top",
+        "since": since.isoformat()[:19] + 'Z',
+        "until": since.replace(
+          day=since.day,
+          hour=23,
+          minute=59,
+          second=59,
+          microsecond=0
+        ).isoformat()[:19] + 'Z'
+      }
+      print(params)
+      data = get(base_url, params=params)
+      print(data.status_code)
+      if data.is_error:
+        print(data.text)
+        raise ValueError("it's error")
+      print(data.json())
+      print(data.headers)
+      data = data.json()['posts']
+      d.writerows([{'id': i['cid'], 'content': i['record']['text']} for i in data])
+      since -= timedelta(days=1)
+      i += 1
+    except Exception as e:
+      error(f"Error occurred: {e}\n{format_exc()}")
+      input()
