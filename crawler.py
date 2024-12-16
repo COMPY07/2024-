@@ -68,7 +68,7 @@ with open("normal.csv", "w") as f:
   while i <= 12 * 31:
     try:
       params = {
-        "query": base_hashtag,
+        "q": base_hashtag,
         "lang": "ko",
         "limit": 100,
         "sort": "top",
